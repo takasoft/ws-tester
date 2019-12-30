@@ -177,7 +177,7 @@ class History extends React.Component {
   }
   render() {
     return (
-      <div className="log-table-wrapper" ref={this.ref}>
+      <div className="log-table-wrapper" ref={this.ref} onScroll={() => console.log(this.ref.current.scrollTop)}>
         <Table striped bordered hover size="sm">
           <thead>
             <tr>

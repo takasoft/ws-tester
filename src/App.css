@@ -5,3 +5,18 @@
 .url-input-button {
   float: right;
 }
+
+.msg-div {
+  display: inline-flex;
+  /* position: fixed; */
+  bottom: 0;
+  width: 100%;
+} 
+
+.log-table-wrapper {
+  position: relative;
+  height: 500px;
+  overflow: auto;
+  display: block;
+  width: 100%;
+}

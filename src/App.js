@@ -4,7 +4,6 @@ import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
 import InputGroup from 'react-bootstrap/InputGroup';
 import FormControl from 'react-bootstrap/FormControl';
-import ListGroup from 'react-bootstrap/ListGroup';
 import Table from 'react-bootstrap/Table';
 import Row from 'react-bootstrap/Row';
 
@@ -39,87 +38,62 @@ class App extends React.Component {
 
   }
 
+  addHistory(evtType, data) {
+    let dataType = 'str';
+    try {
+      data = JSON.parse(data);
+      dataType  = 'json';
+    } catch(e) {
+
+    }
+    this.setState({history: [
+      ...this.state.history,
+      {
+        time: getTime(),
+        evtType, dataType, data
+      }
+    ]});
+  }
+
   connect() {
+    if(this.state.connected) {
+      this.state.ws.close();
+      this.setState({
+        ws: null,
+        connected: false
+      })
+      return;
+    }
+
 
     const ws = new WebSocket(this.state.url); 
     this.setState({ws});
 
-    this.setState({history: [
-      ...this.state.history,
-      {
-        direction: 'INFO',
-        time: getTime(),
-        type: 'str',
-        data: 'Connecting to ' + this.state.url
-      }
-    ]});
+    this.addHistory('INFO', 'Connecting to ' + this.state.url);
 
     const that = this;
 
     ws.onerror = (e) => {
-      that.setState({history: [
-        ...that.state.history,
-        {
-          direction: 'ERROR',
-          time: getTime(),
-          type: 'str',
-          data: e.data
-        }
-      ]});
+      that.addHistory('ERROR', e.data);
     }
 
     ws.onclose = (e) => {
-      that.setState({history: [
-        ...that.state.history,
-        {
-          direction: 'CLOSE',
-          time: getTime(),
-          type: 'str',
-          data: 'code=' + e.code
-        }
-      ]});
+      that.addHistory('CLOSE', 'code='+e.code);
     }
             
     ws.onopen = () => {
-      console.log('CONNECTED: ' + that.state.url)
-
-      that.setState({history: [
-        ...that.state.history,
-        {
-          direction: 'INFO',
-          time: getTime(),
-          type: 'str',
-          data: 'Connected to ' + that.state.url
-        }
-      ], connected: true});
+      that.addHistory('INFO', 'Connected to ' + that.state.url);
+      that.setState({connected: true});
     };
             
-    
     ws.onmessage = (e) => {
-
-      console.log("RECIEVED: "+ e.data);
-      let data = e.data;
-      let type = 'str';
-      try {
-        data = JSON.parse(e.data);
-        type = 'json';
-      } catch(e) {
-
-      }
-      that.setState({history: [
-        ...that.state.history,
-        {
-          direction: 'RECEIVED',
-          time: getTime(),
-          type, data
-        }
-      ]})
+      that.addHistory('RECIEVED', e.data);
     };
   }
 
   send() {
-    console.log("SENT: "+ this.state.msg);
     this.state.ws.send(this.state.msg);
+    this.addHistory('SENT', this.state.msg);
   }
 
   handleUrlChange(url) {
@@ -156,71 +130,97 @@ class App extends React.Component {
           </Row>
           
           <Row>
-          <div className="log-table-wrapper">
-            <Table striped bordered hover size="sm">
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Type</th>
-                  <th>Data</th>
-                </tr>
-              </thead>
-              <tbody>
-                {
-                  this.state.history.map((val,idx) => {
-                    return (
-                      <tr>
-                        <td>{val.time}</td> 
-                        <td>{val.direction}</td>
-                        <td>
-                          {val.type == 'str' ? (
-                            <pre>{val.data}</pre>
-                          ) : (
-                            <ReactJson src={val.data} />
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })
-                }
-              </tbody>
-            </Table>
-          </div>
-          </Row>
-
           
+          </Row>
+            <History history={this.state.history} />
           <Row>
 
-          <div className="msg-div">
-            <AceEditor
-              mode="javascript"
-              theme="github"
-              value={this.state.msg}
-              onChange={(evt) => this.handleMsgChange(evt)}
-              name="UNIQUE_ID_OF_DIV"
-              editorProps={{ $blockScrolling: true }}
-              maxLines={10}
-              minLines={3}
-              width="100%"
-              readOnly={!this.state.connected}
-            />
-            <Button 
-              variant="primary" 
-              onClick={() => this.send()}
-              disabled={!this.state.connected}
-            >
-              Send
-            </Button>
-          </div>
-
+            <div className="msg-div">
+              <AceEditor
+                mode="javascript"
+                theme="github"
+                value={this.state.msg}
+                onChange={(evt) => this.handleMsgChange(evt)}
+                name="UNIQUE_ID_OF_DIV"
+                editorProps={{ $blockScrolling: true }}
+                maxLines={10}
+                minLines={3}
+                width="100%"
+                readOnly={!this.state.connected}
+              />
+              <Button 
+                variant="primary" 
+                onClick={() => this.send()}
+                disabled={!this.state.connected}
+              >
+                Send
+              </Button>
+            </div>
           </Row>
 
-          
         </Container>
       </React.Fragment>
     );
   }
   
+}
+
+class History extends React.Component {
+  constructor(props) {
+    super(props);
+    this.ref = React.createRef();
+    this.history = [];
+  }
+  componentDidUpdate() {
+    // always scroll to the bottom
+    this.ref.current.scrollTop = this.ref.current.scrollHeight;
+  }
+  render() {
+    return (
+      <div className="log-table-wrapper" ref={this.ref}>
+        <Table striped bordered hover size="sm">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Event</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              this.props.history.map((val,idx) => {
+                return (
+                  <tr>
+                    <td>{val.time}</td> 
+                    <td>{val.evtType}</td>
+                    <td>
+                      {val.dataType == 'str' ? (
+                        <pre>{val.data}</pre>
+                        // <AceEditor
+                        //   mode="json"
+                        //   theme="github"
+                        //   value={val.data}
+                        //   readOnly={true}
+                        //   name="msg-display"
+                        //   editorProps={{ $blockScrolling: true }}
+                        //   maxLines={10}
+                        //   minLines={3}
+                        //   width="100%"
+                        // />
+                      ) : (
+                        <ReactJson src={val.data} name={null} displayObjectSize={false} displayDataTypes={false} enableClipboard={false} />
+                        
+                      )}
+                    </td>
+                  </tr>
+                )
+              })
+            }
+          </tbody>
+        </Table>
+      </div>
+    );
+  }
 }
 
 export default App;

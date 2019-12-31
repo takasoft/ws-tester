@@ -168,7 +168,7 @@ class App extends React.Component {
                           <tr key={idx}>
                             <td>{val.time}</td> 
                             <td>{val.evtType}</td>
-                            <td>
+                            <td className="data-col">
                               {val.dataType === 'str' ? (
                                 <pre>{val.data}</pre>
                               ) : (

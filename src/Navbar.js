@@ -23,7 +23,6 @@ class MyNavbar extends React.Component {
               <FaGithub />
             </Nav.Link>
           </Nav>
-
         </Container>
       </Navbar>
     );

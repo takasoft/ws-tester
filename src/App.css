@@ -37,6 +37,10 @@
   font-size: 13px;
 }
 
+.data-col {
+  width: 100%;
+}
+
 #msg-div {
   /* display: inline-flex;
   align-items: flex-end; */

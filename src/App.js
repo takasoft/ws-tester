@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {Fragment} from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
@@ -6,16 +6,31 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import FormControl from 'react-bootstrap/FormControl';
 import Table from 'react-bootstrap/Table';
 import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import Card from 'react-bootstrap/Card';
 
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-java";
 import "ace-builds/src-noconflict/theme-github";
 
-
 import ReactJson from 'react-json-view';
 
 import './App.css';
 import Navbar from './Navbar';
+
+
+// calc for css doesn't work here
+const logTableHeightOrg = window.innerHeight - 60 - 31 - 42;
+const editorMaxLines = 10;
+const editorMinLines = 3;
+const editorLineHeight = 14;
+
+function calcLogViewHeight(numLines) {
+  if(numLines <= editorMinLines) return logTableHeightOrg;
+  if(numLines > editorMaxLines) numLines = editorMaxLines;
+  const editorExtraHeight = editorLineHeight * (numLines - editorMinLines);
+  return logTableHeightOrg - editorExtraHeight;
+}
 
 function getTime() {
   const today = new Date();
@@ -28,14 +43,17 @@ class App extends React.Component {
     url: "wss://echo.websocket.org",
     msg: '',
     history: [],
-    connected: false
+    connected: false,
+    logViewHeight: logTableHeightOrg+"px",
   }
+  refLogView = React.createRef()
+  refMainRow = React.createRef()
   constructor(props) {
     super(props);
   }
 
   componentDidMount() {
-
+    
   }
 
   addHistory(evtType, data) {
@@ -46,13 +64,17 @@ class App extends React.Component {
     } catch(e) {
 
     }
+
     this.setState({history: [
       ...this.state.history,
       {
         time: getTime(),
         evtType, dataType, data
       }
-    ]});
+    ]}, () => {
+      // always scroll to the bottom
+      this.refLogView.current.scrollTop = this.refLogView.current.scrollHeight;
+    });
   }
 
   connect() {
@@ -101,124 +123,100 @@ class App extends React.Component {
   }
 
   handleMsgChange(msg) {
-    this.setState({msg});
+    const logViewHeight = calcLogViewHeight(msg.split("\n").length)+"px";
+    //console.log(logViewHeight, this.state.logViewHeight);
+    this.setState({msg, logViewHeight}, () => {
+      // always scroll to the bottom
+      this.refLogView.current.scrollTop = this.refLogView.current.scrollHeight;
+    });
   }
 
   render() {
     return (
-      <React.Fragment>
+      <Fragment>
         <Navbar />
-        <Container>
-          <Row>
-            <InputGroup size="sm">
-              <FormControl
-                placeholder="URL"
-                aria-label="URL"
-                aria-describedby="url"
-                value={this.state.url}
-                onChange={(evt) => this.handleUrlChange(evt.target.value)}
-              />
-              <InputGroup.Append>
+        <Container id="app-container">
+          <Row noGutters={true} ref={this.refMainRow}>
+            <Col>
+              <InputGroup size="sm" id="url-input-container">
+                <FormControl
+                  placeholder="URL"
+                  aria-label="URL"
+                  aria-describedby="url"
+                  value={this.state.url}
+                  onChange={(evt) => this.handleUrlChange(evt.target.value)}
+                />
+                <InputGroup.Append>
+                  <Button 
+                    variant="primary" 
+                    onClick={() => this.connect()}
+                  >
+                    {this.state.connected ? 'Disconnect' : 'Connect'}
+                  </Button>
+                </InputGroup.Append>
+              </InputGroup>
+
+              <div id="log-table-container" ref={this.refLogView} style={{"min-height": this.state.logViewHeight}}> 
+                <Table striped bordered hover size="sm" id="log-table">
+                  {/* <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Event</th>
+                      <th>Data</th>
+                    </tr>
+                  </thead> */}
+                  <tbody>
+                    {
+                      this.state.history.map((val,idx) => {
+                        return (
+                          <tr>
+                            <td>{val.time}</td> 
+                            <td>{val.evtType}</td>
+                            <td>
+                              {val.dataType == 'str' ? (
+                                <pre>{val.data}</pre>
+                              ) : (
+                                <ReactJson src={val.data} name={null} displayObjectSize={false} displayDataTypes={false} enableClipboard={false} />
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })
+                    }
+                  </tbody>
+                </Table>
+              </div>
+              
+              <div id="msg-div">
+                <div id="msg-editor-div">
+                  <AceEditor
+                    mode="javascript"
+                    theme="github"
+                    value={this.state.msg}
+                    onChange={(data) => this.handleMsgChange(data)}
+                    name="msg-editor"
+                    editorProps={{ $blockScrolling: true }}
+                    maxLines={editorMaxLines}
+                    minLines={editorMinLines}
+                    width="100%"
+                    readOnly={!this.state.connected}
+                  />
+                </div>
                 <Button 
                   variant="primary" 
-                  onClick={() => this.connect()}
+                  size="sm"
+                  onClick={() => this.send()}
+                  disabled={!this.state.connected}
+                  id="msg-submit"
                 >
-                  {this.state.connected ? 'Disconnect' : 'Connect'}
+                  Send
                 </Button>
-              </InputGroup.Append>
-            </InputGroup>
+              </div>
+            </Col>
           </Row>
-          
-          <Row>
-          
-          </Row>
-            <History history={this.state.history} />
-          <Row>
-
-            <div className="msg-div">
-              <AceEditor
-                mode="javascript"
-                theme="github"
-                value={this.state.msg}
-                onChange={(evt) => this.handleMsgChange(evt)}
-                name="UNIQUE_ID_OF_DIV"
-                editorProps={{ $blockScrolling: true }}
-                maxLines={10}
-                minLines={3}
-                width="100%"
-                readOnly={!this.state.connected}
-              />
-              <Button 
-                variant="primary" 
-                onClick={() => this.send()}
-                disabled={!this.state.connected}
-              >
-                Send
-              </Button>
-            </div>
-          </Row>
-
         </Container>
-      </React.Fragment>
-    );
-  }
-  
-}
 
-class History extends React.Component {
-  constructor(props) {
-    super(props);
-    this.ref = React.createRef();
-    this.history = [];
-  }
-  componentDidUpdate() {
-    // always scroll to the bottom
-    this.ref.current.scrollTop = this.ref.current.scrollHeight;
-  }
-  render() {
-    return (
-      <div className="log-table-wrapper" ref={this.ref} onScroll={() => console.log(this.ref.current.scrollTop)}>
-        <Table striped bordered hover size="sm">
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Event</th>
-              <th>Data</th>
-            </tr>
-          </thead>
-          <tbody>
-            {
-              this.props.history.map((val,idx) => {
-                return (
-                  <tr>
-                    <td>{val.time}</td> 
-                    <td>{val.evtType}</td>
-                    <td>
-                      {val.dataType == 'str' ? (
-                        <pre>{val.data}</pre>
-                        // <AceEditor
-                        //   mode="json"
-                        //   theme="github"
-                        //   value={val.data}
-                        //   readOnly={true}
-                        //   name="msg-display"
-                        //   editorProps={{ $blockScrolling: true }}
-                        //   maxLines={10}
-                        //   minLines={3}
-                        //   width="100%"
-                        // />
-                      ) : (
-                        <ReactJson src={val.data} name={null} displayObjectSize={false} displayDataTypes={false} enableClipboard={false} />
-                        
-                      )}
-                    </td>
-                  </tr>
-                )
-              })
-            }
-          </tbody>
-        </Table>
-      </div>
+      </Fragment>
     );
   }
 }

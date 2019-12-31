@@ -14,14 +14,17 @@ class MyNavbar extends React.Component{
 
   render(){
     return(
-      <Navbar bg="light" variant="light">
+      <Navbar bg="light" variant="light" id="main-navbar">
         <Container>
-          <Navbar.Brand to='' activeClassName="active">WS Tester <small>ver. {packageJson.version}</small></Navbar.Brand>
+          <Navbar.Brand to='' activeClassName="active">
+            WS Tester <small>ver. {packageJson.version}</small>
+          </Navbar.Brand>
           <Nav>
             <Nav.Link target="_blank" href="https://github.com/takasoft/ws-tester">
               <FaGithub />
             </Nav.Link>
           </Nav>
+
         </Container>
       </Navbar>
     );

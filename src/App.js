@@ -7,7 +7,6 @@ import FormControl from 'react-bootstrap/FormControl';
 import Table from 'react-bootstrap/Table';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import Card from 'react-bootstrap/Card';
 
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-java";
@@ -43,14 +42,13 @@ class App extends React.Component {
     url: "wss://echo.websocket.org",
     msg: '',
     history: [],
-    connected: false,
     logViewHeight: logTableHeightOrg+"px",
   }
   refLogView = React.createRef()
-  refMainRow = React.createRef()
-  constructor(props) {
-    super(props);
-  }
+
+  // constructor(props) {
+  //   super(props);
+  // }
 
   componentDidMount() {
     
@@ -78,12 +76,9 @@ class App extends React.Component {
   }
 
   connect() {
-    if(this.state.connected) {
+    if(this.state.ws && this.state.ws.readyState === WebSocket.OPEN) {
       this.state.ws.close();
-      this.setState({
-        ws: null,
-        connected: false
-      })
+      this.setState({ws: null});
       return;
     }
 
@@ -105,7 +100,6 @@ class App extends React.Component {
             
     ws.onopen = () => {
       that.addHistory('INFO', 'Connected to ' + that.state.url);
-      that.setState({connected: true});
     };
             
     ws.onmessage = (e) => {
@@ -136,8 +130,8 @@ class App extends React.Component {
       <Fragment>
         <Navbar />
         <Container id="app-container">
-          <Row noGutters={true} ref={this.refMainRow}>
-            <Col>
+          <Row noGutters={true} id="row_main">
+            <Col id="col_main">
               <InputGroup size="sm" id="url-input-container">
                 <FormControl
                   placeholder="URL"
@@ -145,19 +139,21 @@ class App extends React.Component {
                   aria-describedby="url"
                   value={this.state.url}
                   onChange={(evt) => this.handleUrlChange(evt.target.value)}
+                  onKeyDown={(e) => {if(e.keyCode === 13) this.connect()}}
                 />
                 <InputGroup.Append>
                   <Button 
                     variant="primary" 
                     onClick={() => this.connect()}
+                    disabled={this.state.ws && this.state.ws.readyState === WebSocket.CONNECTING}
                   >
-                    {this.state.connected ? 'Disconnect' : 'Connect'}
+                    {(this.state.ws && this.state.ws.readyState === WebSocket.OPEN) ? 'Disconnect' : 'Connect'}
                   </Button>
                 </InputGroup.Append>
               </InputGroup>
 
-              <div id="log-table-container" ref={this.refLogView} style={{"min-height": this.state.logViewHeight}}> 
-                <Table striped bordered hover size="sm" id="log-table">
+              <div id="log-table-container" ref={this.refLogView} style={{minHeight: this.state.logViewHeight}}> 
+                <Table size="sm" id="log-table">
                   {/* <thead>
                     <tr>
                       <th>Time</th>
@@ -169,11 +165,11 @@ class App extends React.Component {
                     {
                       this.state.history.map((val,idx) => {
                         return (
-                          <tr>
+                          <tr key={idx}>
                             <td>{val.time}</td> 
                             <td>{val.evtType}</td>
                             <td>
-                              {val.dataType == 'str' ? (
+                              {val.dataType === 'str' ? (
                                 <pre>{val.data}</pre>
                               ) : (
                                 <ReactJson src={val.data} name={null} displayObjectSize={false} displayDataTypes={false} enableClipboard={false} />
@@ -199,14 +195,14 @@ class App extends React.Component {
                     maxLines={editorMaxLines}
                     minLines={editorMinLines}
                     width="100%"
-                    readOnly={!this.state.connected}
+                    readOnly={!(this.state.ws && this.state.ws.readyState === WebSocket.OPEN)}
                   />
                 </div>
                 <Button 
                   variant="primary" 
                   size="sm"
                   onClick={() => this.send()}
-                  disabled={!this.state.connected}
+                  disabled={!(this.state.ws && this.state.ws.readyState === WebSocket.OPEN)}
                   id="msg-submit"
                 >
                   Send

@@ -7,12 +7,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 
   height: 100vh;
-  position: fixed;
-  width: 100vw;
+  /* position: fixed; */
+  width: 100%;
 }
 
 #root {
-  height: 100vh;
+  height: 100%;
 }
 
 code {

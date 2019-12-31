@@ -1,22 +1,21 @@
 import React from 'react';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
-import NavDropdown from 'react-bootstrap/NavDropdown';
 import Container from 'react-bootstrap/Container';
 import { FaGithub } from 'react-icons/fa';
 
 import packageJson from '../package.json';
 
-class MyNavbar extends React.Component{
-  constructor(props) {
-    super(props)
-  }
+class MyNavbar extends React.Component {
+  // constructor(props) {
+  //   super(props)
+  // }
 
   render(){
     return(
       <Navbar bg="light" variant="light" id="main-navbar">
         <Container>
-          <Navbar.Brand to='' activeClassName="active">
+          <Navbar.Brand to=''>
             WS Tester <small>ver. {packageJson.version}</small>
           </Navbar.Brand>
           <Nav>

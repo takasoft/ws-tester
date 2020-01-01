@@ -1,11 +1,9 @@
 # WS Tester
 
-JSON-Friendly WebSocket Tester
+JSON-Friendly WebSocket Tester that makes manual testing of WebSocket very easy.
 
-# Demo
+Check it out on <a href="https://takasoft.github.io/ws-tester" target="_blank">takasoft.github.io/ws-tester</a>
 
-<a href="https://takasoft.github.io/ws-tester" target="_blank">takasoft.github.io/ws-tester</a>
-
-# Local Development
+## Local Development
 
 Take a look at `README-react.md`
